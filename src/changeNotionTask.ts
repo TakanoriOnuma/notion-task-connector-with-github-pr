@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { parseArgs } from "node:util";
+import { promises as fsPromises } from "fs";
 import { Client } from "@notionhq/client";
 
 import { GitHubPrManager } from "./utils/GitHubPrManager";
@@ -90,7 +91,7 @@ const notion = new Client({
     url: GITHUB_PR_URL,
   });
 
-  await notion.pages.update({
+  const result = await notion.pages.update({
     page_id: targetPage.id,
     properties: {
       ...(CHANGE_STATUS != null
@@ -113,4 +114,24 @@ const notion = new Client({
       },
     },
   });
+
+  if ("properties" in result) {
+    const titleProperty = Object.values(result.properties).find(
+      (prop) => prop.type === "title"
+    );
+    if (titleProperty == null) {
+      throw new Error(
+        "ページのタイトルプロパティが見つかりませんでした: " + result.id
+      );
+    }
+    if (titleProperty && titleProperty.title.length > 0) {
+      console.log(titleProperty);
+    }
+    const title = titleProperty.title.map((text) => text.plain_text).join("");
+    const text = [
+      "Notionの関連タスク一覧です",
+      `- [${title}](${result.url})`,
+    ].join("\n");
+    await fsPromises.writeFile("./connected-tasks.md", text, "utf8");
+  }
 })();
