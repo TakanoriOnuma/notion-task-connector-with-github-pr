@@ -7,10 +7,10 @@ import { NotionManager, NotionProperty } from "./utils/NotionManager";
 
 type Args = {
   /**
-   * 変更対象のNotion ID。複数指定する場合は神間区切りで指定する。
+   * 変更対象のNotionのユニークIDプロパティ値。複数指定する場合は神間区切りで指定する。
    * @example "TSK-123, TSK-456"
    */
-  notionId: string;
+  notionIdProperty: string;
   /** 変更するステータスのNotionプロパティ。変更しない場合は未指定。 */
   statusProperty?: NotionProperty<string>;
   /** 変更するGitHubのPR情報のNotionプロパティ */
@@ -21,17 +21,17 @@ type Args = {
  * Notionのプロパティを変更する関数
  */
 export const changeNotionProperty = async ({
-  notionId,
+  notionIdProperty,
   statusProperty,
   githubPrProperty,
 }: Args) => {
   const notionManager = new NotionManager();
-  const notionUniqueIds = parseNotionUniqueIds(notionId);
+  const notionUniqueIds = parseNotionUniqueIds(notionIdProperty);
 
   const results = await Promise.all(
-    notionUniqueIds.map(async (notionId) => {
+    notionUniqueIds.map(async (notionUniqueId) => {
       const targetPage = await notionManager.fetchNotionPageByUniqueId(
-        notionId
+        notionUniqueId
       );
 
       const githubPrManager = new GitHubPrManager(

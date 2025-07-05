@@ -8,10 +8,12 @@ export type NotionUniqueId = {
 
 /**
  * NotionのユニークID文字列を解析して、NotionUniqueIdの配列に変換する
- * @param notionId - NotionのユニークID文字列。複数指定する場合は神間区切りで指定する。例: "TSK-123, TSK-456"
+ * @param notionIdProperty - NotionのユニークIDプロパティ値。複数指定する場合はカンマ区切りで指定する。例: "TSK-123, TSK-456"
  */
-export const parseNotionUniqueIds = (notionId: string): NotionUniqueId[] => {
-  const notionUniqueIds: NotionUniqueId[] = notionId
+export const parseNotionUniqueIds = (
+  notionIdProperty: string
+): NotionUniqueId[] => {
+  const notionUniqueIds: NotionUniqueId[] = notionIdProperty
     .split(",")
     .map((idStr) => idStr.trim())
     .map((idStr): NotionUniqueId => {
