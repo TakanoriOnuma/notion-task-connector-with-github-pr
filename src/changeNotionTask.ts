@@ -30,9 +30,9 @@ const NOTION_ID = values.notionId;
 const CHANGE_STATUS = values.status;
 const GITHUB_PR_TITLE = values.githubPrTitle;
 const GITHUB_PR_URL = values.githubPrUrl;
-if (!NOTION_ID || !CHANGE_STATUS || !GITHUB_PR_TITLE || !GITHUB_PR_URL) {
+if (!NOTION_ID || !GITHUB_PR_TITLE || !GITHUB_PR_URL) {
   console.error(
-    "次のオプションをコマンドライン引数に渡してください: notionId, status, githubPrTitle, githubPrUrl"
+    "次のオプションをコマンドライン引数に渡してください: notionId, githubPrTitle, githubPrUrl"
   );
   process.exit(1);
 }
@@ -93,12 +93,16 @@ const notion = new Client({
   await notion.pages.update({
     page_id: targetPage.id,
     properties: {
-      ステータス: {
-        type: "status",
-        status: {
-          name: CHANGE_STATUS,
-        },
-      },
+      ...(CHANGE_STATUS != null
+        ? {
+            ステータス: {
+              type: "status",
+              status: {
+                name: CHANGE_STATUS,
+              },
+            },
+          }
+        : {}),
       "GitHub PR(text)": {
         type: "rich_text",
         rich_text: githubPrManager.createGitHubPrsRichText(),
