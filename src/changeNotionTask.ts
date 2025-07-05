@@ -124,9 +124,6 @@ const notion = new Client({
         "ページのタイトルプロパティが見つかりませんでした: " + result.id
       );
     }
-    if (titleProperty && titleProperty.title.length > 0) {
-      console.log(titleProperty);
-    }
     const title = titleProperty.title.map((text) => text.plain_text).join("");
     const text = [
       "Notionの関連タスク一覧です",
