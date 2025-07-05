@@ -1,0 +1,46 @@
+name: Connect Notion Task with GitHub PR
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+
+jobs:
+  connect-notion-task-with-github-pr:
+    runs-on: ubuntu-22.04
+    if: github.event.changes.title != null || github.event.action == 'opened'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Notion Task IDを抽出
+        id: extract_notion_id
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          if [[ "$TITLE" =~ ^\[(.+?)\] ]]; then
+            NOTION_ID="${BASH_REMATCH[1]}"
+            echo "NOTION_ID=$NOTION_ID" >> $GITHUB_OUTPUT
+            echo "抽出されたNotion Task ID: $NOTION_ID"
+          fi
+
+      - name: Set up Node.js
+        if: steps.extract_notion_id.outputs.notion_id != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: "npm"
+
+      - name: Install
+        if: steps.extract_notion_id.outputs.notion_id != ''
+        run: npm install
+
+      - name: Change Notion Task
+        if: steps.extract_notion_id.outputs.notion_id != ''
+        run: |
+          npm run change-notion-task -- \
+            --notionId ${{ steps.extract_notion_id.outputs.notion_id }} \
+            --githubPrTitle "${{ github.event.pull_request.title }}" \
+            --githubPrUrl "${{ github.event.pull_request.html_url }}"
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          DATABASE_ID: ${{ vars.DATABASE_ID }}
