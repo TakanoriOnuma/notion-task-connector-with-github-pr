@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { parseArgs } from "node:util";
 import { promises as fsPromises } from "fs";
-import { Client } from "@notionhq/client";
+import { Client, PageObjectResponse } from "@notionhq/client";
 
 import { GitHubPrManager } from "./utils/GitHubPrManager";
 
@@ -10,7 +10,8 @@ const { values } = parseArgs({
   options: {
     notionId: {
       type: "string",
-      description: "Notion ID to update",
+      description:
+        "対象のNotion ID。複数指定する場合はカンマ区切りで指定。例: 'TSK-123,TSK-456'",
     },
     status: {
       type: "string",
@@ -38,34 +39,49 @@ if (!NOTION_ID || !GITHUB_PR_TITLE || !GITHUB_PR_URL) {
   process.exit(1);
 }
 
-const [prefix, numberStr] = NOTION_ID.split("-");
-if (prefix == null || numberStr == null) {
-  console.error(
-    "Notion IDの形式が正しくありません。例: 'PR-123' のように入力してください。"
-  );
-  process.exit(1);
-}
-if (/^\d+/.test(numberStr) === false) {
-  console.error(
-    "Notion IDの番号部分は数字でなければなりません。例: 'PR-123' のように入力してください。"
-  );
-  process.exit(1);
-}
-const NOTION_ID_PREFIX = prefix;
-const NOTION_ID_NUMBER = parseInt(numberStr, 10);
+/** NotionのユニークIDプロパティ情報 */
+type NotionUniqueId = {
+  prefix: string;
+  number: number;
+};
+const NOTION_UNIQUE_IDS: NotionUniqueId[] = NOTION_ID.split(",")
+  .map((idStr) => idStr.trim())
+  .map((idStr): NotionUniqueId => {
+    const [prefix, numberStr] = idStr.split("-");
+    if (prefix == null || numberStr == null) {
+      throw new Error(
+        "Notion IDの形式が正しくありません。例: 'TSK-123' のように入力してください。" +
+          idStr
+      );
+    }
+    if (/^\d+/.test(numberStr) === false) {
+      throw new Error(
+        "Notion IDの番号部分は数字でなければなりません。例: 'TSK-123' のように入力してください。" +
+          idStr
+      );
+    }
+    return {
+      prefix,
+      number: parseInt(numberStr, 10),
+    };
+  });
 
 const notion = new Client({
   auth: process.env.NOTION_TOKEN,
 });
 
-(async () => {
+/**
+ * NotionのユニークIDを使ってページを取得する
+ * @param notionId - NotionのユニークID
+ */
+const fetchNotionPageByUniqueId = async (notionId: NotionUniqueId) => {
   const response = await notion.databases.query({
     database_id: process.env.DATABASE_ID || "",
     filter: {
       property: "ID",
       type: "unique_id",
       unique_id: {
-        equals: NOTION_ID_NUMBER,
+        equals: notionId.number,
       },
     },
   });
@@ -82,40 +98,50 @@ const notion = new Client({
         targetPage.id
     );
   }
+  return targetPage;
+};
 
-  const githubPrManager = new GitHubPrManager(
-    targetPage.properties["GitHub PR(text)"]
-  );
-  githubPrManager.addGitHubPr({
-    title: GITHUB_PR_TITLE,
-    url: GITHUB_PR_URL,
-  });
+(async () => {
+  const results = await Promise.all(
+    NOTION_UNIQUE_IDS.map(async (notionId) => {
+      const targetPage = await fetchNotionPageByUniqueId(notionId);
 
-  const result = await notion.pages.update({
-    page_id: targetPage.id,
-    properties: {
-      ...(CHANGE_STATUS != null
-        ? {
-            ステータス: {
-              type: "status",
-              status: {
-                name: CHANGE_STATUS,
-              },
-            },
-          }
-        : {}),
-      "GitHub PR(text)": {
-        type: "rich_text",
-        rich_text: githubPrManager.createGitHubPrsRichText(),
-      },
-      "GitHub PR(url)": {
-        type: "url",
+      const githubPrManager = new GitHubPrManager(
+        targetPage.properties["GitHub PR(text)"]
+      );
+      githubPrManager.addGitHubPr({
+        title: GITHUB_PR_TITLE,
         url: GITHUB_PR_URL,
-      },
-    },
-  });
+      });
 
-  if ("properties" in result) {
+      const result = await notion.pages.update({
+        page_id: targetPage.id,
+        properties: {
+          ...(CHANGE_STATUS != null
+            ? {
+                ステータス: {
+                  type: "status",
+                  status: {
+                    name: CHANGE_STATUS,
+                  },
+                },
+              }
+            : {}),
+          "GitHub PR(text)": {
+            type: "rich_text",
+            rich_text: githubPrManager.createGitHubPrsRichText(),
+          },
+          "GitHub PR(url)": {
+            type: "url",
+            url: GITHUB_PR_URL,
+          },
+        },
+      });
+      return result;
+    })
+  );
+
+  const getPageTitle = (result: PageObjectResponse) => {
     const titleProperty = Object.values(result.properties).find(
       (prop) => prop.type === "title"
     );
@@ -125,10 +151,17 @@ const notion = new Client({
       );
     }
     const title = titleProperty.title.map((text) => text.plain_text).join("");
-    const text = [
-      "Notionの関連タスク一覧です",
-      `- [${title}](${result.url})`,
-    ].join("\n");
-    await fsPromises.writeFile("./connected-tasks.md", text, "utf8");
-  }
+    return title;
+  };
+
+  const text = [
+    "Notionの関連タスク一覧です",
+    ...results.map((result) => {
+      if (!("properties" in result)) {
+        throw new Error("ページのプロパティが見つかりません: " + result.id);
+      }
+      return `- [${getPageTitle(result)}](${result.url})`;
+    }),
+  ].join("\n");
+  await fsPromises.writeFile("./connected-tasks.md", text, "utf8");
 })();
