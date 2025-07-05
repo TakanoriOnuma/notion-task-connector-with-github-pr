@@ -41,7 +41,7 @@ jobs:
         if: steps.extract_notion_id.outputs.notion_id != ''
         run: |
           npm run change-notion-task -- \
-            --notionId ${{ steps.extract_notion_id.outputs.notion_id }} \
+            --notionId "${{ steps.extract_notion_id.outputs.notion_id }}" \
             --githubPrTitle "${{ github.event.pull_request.title }}" \
             --githubPrUrl "${{ github.event.pull_request.html_url }}"
         env:
