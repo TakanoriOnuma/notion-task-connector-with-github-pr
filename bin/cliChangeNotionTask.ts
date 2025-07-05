@@ -3,7 +3,7 @@ import { parseArgs } from "node:util";
 import { promises as fsPromises } from "fs";
 import { Client, PageObjectResponse } from "@notionhq/client";
 
-import { GitHubPrManager } from "./utils/GitHubPrManager";
+import { GitHubPrManager } from "../src/utils/GitHubPrManager";
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
