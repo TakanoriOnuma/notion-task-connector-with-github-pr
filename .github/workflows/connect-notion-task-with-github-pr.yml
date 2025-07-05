@@ -10,6 +10,9 @@ jobs:
   connect-notion-task-with-github-pr:
     runs-on: ubuntu-22.04
     if: github.event.changes.title != null || github.event.action == 'opened'
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
