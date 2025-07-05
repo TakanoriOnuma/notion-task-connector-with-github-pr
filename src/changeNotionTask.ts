@@ -1,10 +1,8 @@
 import "dotenv/config";
 import { parseArgs } from "node:util";
-import {
-  Client,
-  PageObjectResponse,
-  UpdatePageParameters,
-} from "@notionhq/client";
+import { Client } from "@notionhq/client";
+
+import { GitHubPrManager } from "./utils/GitHubPrManager";
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
@@ -59,66 +57,6 @@ const notion = new Client({
   auth: process.env.NOTION_TOKEN,
 });
 
-/** GitHubのPR情報 */
-type GitHubPr = {
-  title: string;
-  url: string;
-};
-
-/**
- * GitHub PRのリンクテキストを取得する関数
- * @param property - Notionのページオブジェクトのプロパティ
- */
-const getGitHubPrs = (property: PageObjectResponse["properties"][string]) => {
-  if (property.type !== "rich_text") {
-    throw new Error("'rich_text'タイプのプロパティではありません");
-  }
-  const githubRegExp = new RegExp("^https://github.com");
-  const githubPrs: GitHubPr[] = [];
-  property.rich_text.forEach((text) => {
-    if (text.type !== "text") {
-      return;
-    }
-    if (text.text.link == null) {
-      return;
-    }
-    if (!githubRegExp.test(text.text.link.url)) {
-      return;
-    }
-    githubPrs.push({
-      title: text.text.content.trim(),
-      url: text.text.link.url,
-    });
-  });
-  return githubPrs;
-};
-
-/**
- * Notionのプロパティに保存するためのGitHub PRのリッチテキストを作成する
- * @param githubPrs - GitHub PRの情報を含む配列
- */
-const createGitHubPrsRichText = (githubPrs: GitHubPr[]) => {
-  type RichTextProperty = Extract<
-    Required<UpdatePageParameters>["properties"][string],
-    { type?: "rich_text" }
-  >;
-  const richTexts: RichTextProperty["rich_text"] = githubPrs.map((pr) => ({
-    type: "text",
-    text: {
-      content: pr.title,
-      link: {
-        url: pr.url,
-      },
-    },
-  }));
-  return richTexts.flatMap((richText, index): RichTextProperty["rich_text"] => {
-    if (index === richTexts.length - 1) {
-      return [richText]; // 最後の要素は改行なし
-    }
-    return [richText, { type: "text", text: { content: "\n" } }];
-  });
-};
-
 (async () => {
   const response = await notion.databases.query({
     database_id: process.env.DATABASE_ID || "",
@@ -144,8 +82,10 @@ const createGitHubPrsRichText = (githubPrs: GitHubPr[]) => {
     );
   }
 
-  const githubPrs = getGitHubPrs(targetPage.properties["GitHub PR(text)"]);
-  githubPrs.push({
+  const githubPrManager = new GitHubPrManager(
+    targetPage.properties["GitHub PR(text)"]
+  );
+  githubPrManager.addGitHubPr({
     title: GITHUB_PR_TITLE,
     url: GITHUB_PR_URL,
   });
@@ -161,7 +101,7 @@ const createGitHubPrsRichText = (githubPrs: GitHubPr[]) => {
       },
       "GitHub PR(text)": {
         type: "rich_text",
-        rich_text: createGitHubPrsRichText(githubPrs),
+        rich_text: githubPrManager.createGitHubPrsRichText(),
       },
       "GitHub PR(url)": {
         type: "url",
