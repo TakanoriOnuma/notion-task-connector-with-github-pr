@@ -1,13 +1,13 @@
 import { PageObjectResponse, UpdatePageParameters } from "@notionhq/client";
 
 /** GitHubのPR情報 */
-type GitHubPr = {
+export type GitHubPr = {
   title: string;
   url: string;
 };
 
 /** Notionプロパティ（リッチテキスト） */
-type RichTextProperty = Extract<
+export type RichTextProperty = Extract<
   Required<UpdatePageParameters>["properties"][string],
   { type?: "rich_text" }
 >;
