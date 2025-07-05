@@ -6,8 +6,8 @@
   "license": "MIT",
   "main": "index.js",
   "scripts": {
-    "change-notion-task": "tsx ./src/changeNotionTask.ts",
-    "exec:change-notion-task": "npm run change-notion-task -- --notionId TSK-2 --status 完了 --githubPrTitle 'GitHub PRタイトル' --githubPrUrl https://github.com/"
+    "change-notion-task": "tsx ./bin/cliChangeNotionTask.ts",
+    "example:change-notion-task": "npm run change-notion-task -- --notionIdProperty TSK-2 --status 完了 --githubPrTitle 'GitHub PRタイトル' --githubPrUrl https://github.com/"
   },
   "dependencies": {
     "@notionhq/client": "^4.0.0"
