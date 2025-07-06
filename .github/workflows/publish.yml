@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-  # 動作確認用
-  pull_request:
 
 jobs:
   publish:
