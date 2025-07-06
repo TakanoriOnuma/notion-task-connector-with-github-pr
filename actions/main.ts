@@ -3,13 +3,11 @@ import { context } from "@actions/github";
 import { changeNotionProperty } from "../src/changeNotionProperty";
 
 export async function run(): Promise<void> {
-  console.log(JSON.stringify(context.payload, null, 2));
   const prPayload = context.payload.pull_request;
   if (prPayload == null) {
     core.setFailed("Pull request payload is not available.");
     return;
   }
-  core.setFailed("わざとエラーにしてみます！");
 
   const notionIdProperty = core.getInput("notionIdProperty", {
     required: true,
