@@ -37,13 +37,24 @@ jobs:
         if: steps.extract_notion_id_property.outputs.value != ''
         run: npm install
 
+      - name: Build Action
+        if: steps.extract_notion_id_property.outputs.value != ''
+        run: npm run build
+
       - name: Change Notion Task
         if: steps.extract_notion_id_property.outputs.value != ''
-        run: |
-          npm run change-notion-task -- \
-            --notionIdProperty "${{ steps.extract_notion_id_property.outputs.value }}" \
-            --githubPrTitle "${{ github.event.pull_request.title }}" \
-            --githubPrUrl "${{ github.event.pull_request.html_url }}"
+        # 自作アクションでやるパターン
+        uses: ./
+        with:
+          notionIdProperty: ${{ steps.extract_notion_id_property.outputs.value }}
+          githubPrPropertyName: "GitHub PR(text)"
+        # CLIでやるパターン
+        # run: |
+        #   npm run change-notion-task -- \
+        #     --notionIdProperty "${{ steps.extract_notion_id_property.outputs.value }}" \
+        #     --githubPrTitle "${{ github.event.pull_request.title }}" \
+        #     --githubPrUrl "${{ github.event.pull_request.html_url }}"
+        # 共通設定の環境変数
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           DATABASE_ID: ${{ vars.DATABASE_ID }}
