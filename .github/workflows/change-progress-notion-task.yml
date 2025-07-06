@@ -1,0 +1,50 @@
+name: Change Progress Notion Task
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+
+jobs:
+  change-progress-notion-task:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Notion ID Propertyを抽出
+        id: extract_notion_id_property
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          if [[ "$TITLE" =~ ^\[(.+?)\] ]]; then
+            NOTION_ID_PROPERTY="${BASH_REMATCH[1]}"
+            echo "抽出されたNotion ID Property: $NOTION_ID_PROPERTY"
+            echo "VALUE=$NOTION_ID_PROPERTY" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set up Node.js
+        if: steps.extract_notion_id_property.outputs.value != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: "npm"
+
+      - name: Install
+        if: steps.extract_notion_id_property.outputs.value != ''
+        run: npm install
+
+      - name: Build Action
+        if: steps.extract_notion_id_property.outputs.value != ''
+        run: npm run build
+
+      - name: Change Progress Notion Task
+        if: steps.extract_notion_id_property.outputs.value != ''
+        uses: ./
+        with:
+          notionIdProperty: ${{ steps.extract_notion_id_property.outputs.value }}
+          statusPropertyName: "ステータス"
+          statusPropertyValue: "進行中"
+          githubPrPropertyName: "GitHub PR(text)"
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          DATABASE_ID: ${{ vars.DATABASE_ID }}
