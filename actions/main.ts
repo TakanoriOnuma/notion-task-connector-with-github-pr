@@ -10,7 +10,6 @@ export async function run(): Promise<void> {
     return;
   }
   core.setFailed("わざとエラーにしてみます！");
-  return;
 
   const notionIdProperty = core.getInput("notionIdProperty", {
     required: true,
