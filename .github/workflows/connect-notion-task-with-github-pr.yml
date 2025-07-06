@@ -44,7 +44,7 @@ jobs:
       - name: Change Notion Task
         if: steps.extract_notion_id_property.outputs.value != ''
         # 自作アクションでやるパターン
-        uses: ./
+        uses: TakanoriOnuma/notion-task-connector-with-github-pr@dist
         with:
           notionIdProperty: ${{ steps.extract_notion_id_property.outputs.value }}
           githubPrPropertyName: "GitHub PR(text)"
