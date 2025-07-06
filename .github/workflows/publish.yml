@@ -1,0 +1,39 @@
+name: Publish Action
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  publish:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: "npm"
+
+      - name: Install
+        run: npm install
+
+      - name: Build Action
+        run: npm run build
+
+      - name: Bundle Publish Files
+        run: |
+          mkdir -p publish/actions
+          cp -r actions/dist publish/actions/
+          cp action.yml publish/
+          cp README.md publish/
+
+      - name: Publish Action
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: publish
+          publish_branch: dist
