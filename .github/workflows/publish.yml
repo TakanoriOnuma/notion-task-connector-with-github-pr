@@ -4,12 +4,17 @@ on:
   push:
     branches:
       - main
+    tags:
+      - "src-v*.*.*"
 
 jobs:
   publish:
     runs-on: ubuntu-22.04
     permissions:
       contents: write
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -31,9 +36,21 @@ jobs:
           cp action.yml publish/
           cp README.md publish/
 
+      - name: Extract Version
+        id: extract_version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          VERSION=${TAG_NAME#src-}
+          echo "Extracted version: $VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+
       - name: Publish Action
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: publish
           publish_branch: dist
+          tag_name: ${{ steps.extract_version.outputs.VERSION }}
+          tag_message: "Publish ${{ github.ref_name }}"
