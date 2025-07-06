@@ -1,0 +1,22 @@
+name: Change Notion Task
+description: Notionタスクのプロパティを変更するアクション
+
+inputs:
+  notionIdProperty:
+    description: |
+      変更対象のNotionのユニークIDプロパティ値。複数指定する場合はカンマ区切りで指定する。
+      例: "TSK-123, TSK-456"
+    required: true
+  # Notion Statusのプロパティ
+  statusPropertyName:
+    description: 変更するステータスのNotionプロパティ名
+  statusPropertyValue:
+    description: 変更後のステータスのNotionプロパティ値
+  # Notion GitHub PRのプロパティ
+  githubPrPropertyName:
+    description: GitHub PRのプロパティ名
+    required: true
+
+runs:
+  using: node20
+  main: actions/dist/index.js
