@@ -6,14 +6,18 @@
   "license": "MIT",
   "main": "index.js",
   "scripts": {
+    "build": "ncc build actions/index.ts -o actions/dist",
     "change-notion-task": "tsx ./bin/cliChangeNotionTask.ts",
     "example:change-notion-task": "npm run change-notion-task -- --notionIdProperty TSK-2 --status 完了 --githubPrTitle 'GitHub PRタイトル' --githubPrUrl https://github.com/"
   },
   "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@actions/github": "^6.0.1",
     "@notionhq/client": "^4.0.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.10",
+    "@vercel/ncc": "^0.38.3",
     "dotenv": "^17.0.1",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3"
