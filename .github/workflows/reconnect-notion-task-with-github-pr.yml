@@ -1,18 +1,29 @@
-name: Connect Notion Task with GitHub PR
+name: ReConnect Notion Task with GitHub PR
 
 on:
   pull_request:
     types:
-      - opened
+      - edited
 
 jobs:
-  connect-notion-task-with-github-pr:
+  reconnect-notion-task-with-github-pr:
     runs-on: ubuntu-22.04
+    if: github.event.changes.title != null
     permissions:
       contents: write
       pull-requests: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: 変更前のNotion ID Propertyを抽出
+        id: extract_notion_id_property_before
+        run: |
+          TITLE="${{ github.event.changes.title.from }}"
+          if [[ "$TITLE" =~ ^\[(.+?)\] ]]; then
+            NOTION_ID_PROPERTY_BEFORE="${BASH_REMATCH[1]}"
+            echo "抽出された変更前のNotion ID Property: $NOTION_ID_PROPERTY_BEFORE"
+            echo "VALUE=$NOTION_ID_PROPERTY_BEFORE" >> $GITHUB_OUTPUT
+          fi
 
       - name: Notion ID Propertyを抽出
         id: extract_notion_id_property
@@ -25,25 +36,26 @@ jobs:
           fi
 
       - name: Set up Node.js
-        if: steps.extract_notion_id_property.outputs.value != ''
+        if: steps.extract_notion_id_property.outputs.value != '' || steps.extract_notion_id_property_before.outputs.value != ''
         uses: actions/setup-node@v4
         with:
           node-version-file: package.json
           cache: "npm"
 
       - name: Install
-        if: steps.extract_notion_id_property.outputs.value != ''
+        if: steps.extract_notion_id_property.outputs.value != '' || steps.extract_notion_id_property_before.outputs.value != ''
         run: npm install
 
       - name: Build Action
-        if: steps.extract_notion_id_property.outputs.value != ''
+        if: steps.extract_notion_id_property.outputs.value != '' || steps.extract_notion_id_property_before.outputs.value != ''
         run: npm run build
 
       - name: Change Notion Task
-        if: steps.extract_notion_id_property.outputs.value != ''
+        if: steps.extract_notion_id_property.outputs.value != '' || steps.extract_notion_id_property_before.outputs.value != ''
         # 自作アクションでやるパターン
         uses: ./
         with:
+          beforeNotionIdProperty: ${{ steps.extract_notion_id_property_before.outputs.value }}
           notionIdProperty: ${{ steps.extract_notion_id_property.outputs.value }}
           githubPrPropertyName: "GitHub PR(text)"
         # CLIでやるパターン
@@ -58,7 +70,7 @@ jobs:
           DATABASE_ID: ${{ vars.DATABASE_ID }}
 
       - name: Comment Connected Tasks
-        if: steps.extract_notion_id_property.outputs.value != ''
+        if: steps.extract_notion_id_property.outputs.value != '' || steps.extract_notion_id_property_before.outputs.value != ''
         uses: TakanoriOnuma/actions-comment-on-pr@v0.0.0
         with:
           message-file-path: ./connected-tasks.md
