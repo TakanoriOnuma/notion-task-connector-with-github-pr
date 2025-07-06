@@ -9,9 +9,15 @@ export async function run(): Promise<void> {
     return;
   }
 
-  const notionIdProperty = core.getInput("notionIdProperty", {
-    required: true,
-  });
+  const notionIdProperty = core.getInput("notionIdProperty");
+  const beforeNotionIdProperty = core.getInput("beforeNotionIdProperty");
+  if (!notionIdProperty && !beforeNotionIdProperty) {
+    core.setFailed(
+      "'notionIdProperty'か'beforeNotionIdProperty'のいずれかを指定してください。"
+    );
+    return;
+  }
+
   const statusPropertyName = core.getInput("statusPropertyName") || undefined;
   const statusPropertyValue = core.getInput("statusPropertyValue") || undefined;
   const githubPrPropertyName = core.getInput("githubPrPropertyName", {
@@ -20,6 +26,7 @@ export async function run(): Promise<void> {
 
   await changeNotionProperty({
     notionIdProperty,
+    beforeNotionIdProperty,
     statusProperty:
       statusPropertyName && statusPropertyValue
         ? {

@@ -64,6 +64,20 @@ export class GitHubPrManager {
   }
 
   /**
+   * GitHubのPR情報を削除する
+   * @param githubPr - GitHubのPR情報
+   */
+  removeGitHubPr(githubPr: GitHubPr) {
+    const index = this.githubPrs.findIndex((pr) => pr.url === githubPr.url);
+    if (index !== -1) {
+      this.githubPrs.splice(index, 1);
+    } else {
+      // 必要に応じてエラーハンドリングを行う
+      // throw new Error("指定されたGitHub PRが見つかりません: " + githubPr.url);
+    }
+  }
+
+  /**
    * Notionのプロパティに保存するためのGitHub PRのリッチテキストを作成する
    */
   createGitHubPrsRichText() {
