@@ -31342,9 +31342,12 @@ function run() {
             core.setFailed("Pull request payload is not available.");
             return;
         }
-        const notionIdProperty = core.getInput("notionIdProperty", {
-            required: true,
-        });
+        const notionIdProperty = core.getInput("notionIdProperty");
+        const beforeNotionIdProperty = core.getInput("beforeNotionIdProperty");
+        if (!notionIdProperty && !beforeNotionIdProperty) {
+            core.setFailed("'notionIdProperty'か'beforeNotionIdProperty'のいずれかを指定してください。");
+            return;
+        }
         const statusPropertyName = core.getInput("statusPropertyName") || undefined;
         const statusPropertyValue = core.getInput("statusPropertyValue") || undefined;
         const githubPrPropertyName = core.getInput("githubPrPropertyName", {
@@ -31352,6 +31355,7 @@ function run() {
         });
         yield (0, changeNotionProperty_1.changeNotionProperty)({
             notionIdProperty,
+            beforeNotionIdProperty,
             statusProperty: statusPropertyName && statusPropertyValue
                 ? {
                     name: statusPropertyName,
@@ -31395,9 +31399,39 @@ const NotionManager_1 = __nccwpck_require__(1697);
 /**
  * Notionのプロパティを変更する関数
  */
-const changeNotionProperty = (_a) => __awaiter(void 0, [_a], void 0, function* ({ notionIdProperty, statusProperty, githubPrProperty, }) {
+const changeNotionProperty = (_a) => __awaiter(void 0, [_a], void 0, function* ({ notionIdProperty, beforeNotionIdProperty, statusProperty, githubPrProperty, }) {
     const notionManager = new NotionManager_1.NotionManager();
-    const notionUniqueIds = (0, parseNotionUniqueIds_1.parseNotionUniqueIds)(notionIdProperty);
+    const notionUniqueIds = notionIdProperty
+        ? (0, parseNotionUniqueIds_1.parseNotionUniqueIds)(notionIdProperty)
+        : [];
+    const beforeNotionUniqueIds = beforeNotionIdProperty
+        ? (0, parseNotionUniqueIds_1.parseNotionUniqueIds)(beforeNotionIdProperty)
+        : [];
+    if (notionUniqueIds.length <= 0 && beforeNotionUniqueIds.length <= 0) {
+        throw new Error("NotionのユニークIDプロパティが指定されていません。" +
+            "notionIdPropertyまたはbeforeNotionIdPropertyのいずれかを指定してください。");
+    }
+    // 除外されたNotionページはunlinkする
+    const removedNotionUniqueIds = beforeNotionUniqueIds.filter((beforeNotionUniqueId) => {
+        return !notionUniqueIds.some((notionUniqueId) => {
+            return (notionUniqueId.prefix === beforeNotionUniqueId.prefix &&
+                notionUniqueId.number === beforeNotionUniqueId.number);
+        });
+    });
+    yield Promise.all(removedNotionUniqueIds.map((notionUniqueId) => __awaiter(void 0, void 0, void 0, function* () {
+        const targetPage = yield notionManager.fetchNotionPageByUniqueId(notionUniqueId);
+        const githubPrManager = new GitHubPrManager_1.GitHubPrManager(targetPage.properties[githubPrProperty.name]);
+        // 自分のGitHub PR情報を取り除く
+        githubPrManager.removeGitHubPr(githubPrProperty.value);
+        return yield notionManager.updateNotionProperty(targetPage.id, {
+            statusProperty: statusProperty,
+            githubPrRichTextProperty: {
+                name: githubPrProperty.name,
+                value: githubPrManager.createGitHubPrsRichText(),
+            },
+        });
+    })));
+    // 対象のNotionページを更新する
     const results = yield Promise.all(notionUniqueIds.map((notionUniqueId) => __awaiter(void 0, void 0, void 0, function* () {
         const targetPage = yield notionManager.fetchNotionPageByUniqueId(notionUniqueId);
         const githubPrManager = new GitHubPrManager_1.GitHubPrManager(targetPage.properties[githubPrProperty.name]);
@@ -31410,6 +31444,7 @@ const changeNotionProperty = (_a) => __awaiter(void 0, [_a], void 0, function* (
             },
         });
     })));
+    // 結果をMarkdown形式でファイルに保存
     const getPageTitle = (result) => {
         const titleProperty = Object.values(result.properties).find((prop) => prop.type === "title");
         if (titleProperty == null) {
@@ -31485,6 +31520,20 @@ class GitHubPrManager {
         }
         // 新しいPRの場合は追加
         this.githubPrs.push(githubPr);
+    }
+    /**
+     * GitHubのPR情報を削除する
+     * @param githubPr - GitHubのPR情報
+     */
+    removeGitHubPr(githubPr) {
+        const index = this.githubPrs.findIndex((pr) => pr.url === githubPr.url);
+        if (index !== -1) {
+            this.githubPrs.splice(index, 1);
+        }
+        else {
+            // 必要に応じてエラーハンドリングを行う
+            // throw new Error("指定されたGitHub PRが見つかりません: " + githubPr.url);
+        }
     }
     /**
      * Notionのプロパティに保存するためのGitHub PRのリッチテキストを作成する

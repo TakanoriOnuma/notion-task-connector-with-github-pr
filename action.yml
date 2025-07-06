@@ -6,7 +6,10 @@ inputs:
     description: |
       変更対象のNotionのユニークIDプロパティ値。複数指定する場合はカンマ区切りで指定する。
       例: "TSK-123, TSK-456"
-    required: true
+  beforeNotionIdProperty:
+    description: |
+      以前指定していたNotionのユニークIDプロパティ値。notionIdPropertyとの差分を見て、消えたものについてはunlinkする。
+      例: "TSK-123, TSK-456"
   # Notion Statusのプロパティ
   statusPropertyName:
     description: 変更するステータスのNotionプロパティ名
