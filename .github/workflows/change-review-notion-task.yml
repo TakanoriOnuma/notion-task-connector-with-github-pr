@@ -1,14 +1,13 @@
-name: Change Complete Notion Task
+name: Change Review Notion Task
 
 on:
   pull_request:
     types:
-      - closed
+      - review_requested
 
 jobs:
-  change-complete-notion-task:
+  change-review-notion-task:
     runs-on: ubuntu-22.04
-    if: github.event.pull_request.merged == true
     steps:
       - uses: actions/checkout@v4
 
@@ -37,13 +36,13 @@ jobs:
         if: steps.extract_notion_id_property.outputs.value != ''
         run: npm run build
 
-      - name: Change Complete Notion Task
+      - name: Change Review Notion Task
         if: steps.extract_notion_id_property.outputs.value != ''
         uses: ./
         with:
           notionIdProperty: ${{ steps.extract_notion_id_property.outputs.value }}
           statusPropertyName: "ステータス"
-          statusPropertyValue: "完了"
+          statusPropertyValue: "レビュー中"
           githubPrPropertyName: "GitHub PR(text)"
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
