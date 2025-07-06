@@ -10,7 +10,7 @@ type Args = {
    * 変更対象のNotionのユニークIDプロパティ値。複数指定する場合は神間区切りで指定する。
    * @example "TSK-123, TSK-456"
    */
-  notionIdProperty: string;
+  notionIdProperty?: string;
   /**
    * 以前指定していたNotionのユニークIDプロパティ値。notionIdPropertyとの差分を見て、消えたものについてはunlinkする。
    * @example "TSK-123, TSK-456"
@@ -32,10 +32,19 @@ export const changeNotionProperty = async ({
   githubPrProperty,
 }: Args) => {
   const notionManager = new NotionManager();
-  const notionUniqueIds = parseNotionUniqueIds(notionIdProperty);
+  const notionUniqueIds = notionIdProperty
+    ? parseNotionUniqueIds(notionIdProperty)
+    : [];
   const beforeNotionUniqueIds = beforeNotionIdProperty
     ? parseNotionUniqueIds(beforeNotionIdProperty)
     : [];
+
+  if (notionUniqueIds.length <= 0 && beforeNotionUniqueIds.length <= 0) {
+    throw new Error(
+      "NotionのユニークIDプロパティが指定されていません。" +
+        "notionIdPropertyまたはbeforeNotionIdPropertyのいずれかを指定してください。"
+    );
+  }
 
   // 除外されたNotionページはunlinkする
   const removedNotionUniqueIds = beforeNotionUniqueIds.filter(
