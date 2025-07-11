@@ -76,7 +76,7 @@ export class NotionManager {
       properties: {
         ...(statusProperty != null
           ? {
-              ステータス: {
+              [statusProperty.name]: {
                 type: "status",
                 status: {
                   name: statusProperty.value,
