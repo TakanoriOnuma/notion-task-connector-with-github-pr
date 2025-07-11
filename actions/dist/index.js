@@ -31627,7 +31627,7 @@ class NotionManager {
                 page_id: notionPageId,
                 properties: Object.assign(Object.assign({}, (statusProperty != null
                     ? {
-                        ステータス: {
+                        [statusProperty.name]: {
                             type: "status",
                             status: {
                                 name: statusProperty.value,
