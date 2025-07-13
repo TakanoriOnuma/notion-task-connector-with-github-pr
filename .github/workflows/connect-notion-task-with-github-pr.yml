@@ -59,7 +59,7 @@ jobs:
 
       - name: Comment Connected Tasks
         if: steps.extract_notion_id_property.outputs.value != ''
-        uses: TakanoriOnuma/actions-comment-on-pr@v0.0.0
+        uses: thollander/actions-comment-pull-request@v3
         with:
-          message-file-path: ./connected-tasks.md
-          identifier-message: "<!-- CONNECTED NOTION TASKS -->"
+          file-path: ./connected-tasks.md
+          comment-tag: CONNECTED_NOTION_TASKS
