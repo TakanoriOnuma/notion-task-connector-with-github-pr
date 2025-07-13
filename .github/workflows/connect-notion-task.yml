@@ -1,0 +1,107 @@
+name: Connect Notion Task with GitHub PR
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - edited
+      - review_requested
+      - closed
+
+jobs:
+  connect-notion-task-with-github-pr:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 変更前のNotion ID Propertyを抽出
+        if: github.event.changes.title != null
+        id: extract_notion_id_property_before
+        run: |
+          TITLE="${{ github.event.changes.title.from }}"
+          if [[ "$TITLE" =~ ^\[(.+?)\] ]]; then
+            NOTION_ID_PROPERTY_BEFORE="${BASH_REMATCH[1]}"
+            echo "抽出された変更前のNotion ID Property: $NOTION_ID_PROPERTY_BEFORE"
+            echo "VALUE=$NOTION_ID_PROPERTY_BEFORE" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Notion ID Propertyを抽出
+        id: extract_notion_id_property
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          if [[ "$TITLE" =~ ^\[(.+?)\] ]]; then
+            NOTION_ID_PROPERTY="${BASH_REMATCH[1]}"
+            echo "抽出されたNotion ID Property: $NOTION_ID_PROPERTY"
+            echo "VALUE=$NOTION_ID_PROPERTY" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Notionステータスの更新値を設定
+        if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
+        id: set_notion_status
+        run: |
+          case "${{ github.event.action }}" in
+            opened|reopened)
+              STATUS="進行中"
+              ;;
+            review_requested)
+              STATUS="レビュー中"
+              ;;
+            closed)
+              if [[ "${{ github.event.pull_request.merged }}" == 'true' ]]; then
+                STATUS="完了"
+              fi
+              ;;
+          esac
+          if [[ -n "$STATUS" ]]; then
+            echo "更新先のNotionステータス: $STATUS"
+            echo "VALUE=$STATUS" >> $GITHUB_OUTPUT
+            echo "PROPERTY_NAME=ステータス" >> $GITHUB_OUTPUT
+          else
+            echo "ステータス更新はありません"
+          fi
+
+      # アクションビルド用のステップ
+      - name: Set up Node.js
+        if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: "npm"
+      - name: Install
+        if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
+        run: npm install
+      - name: Build Action
+        if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
+        run: npm run build
+
+      - name: Change Notion Task
+        if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
+        # 自作アクションでやるパターン
+        uses: ./
+        with:
+          beforeNotionIdProperty: ${{ steps.extract_notion_id_property_before.outputs.VALUE }}
+          notionIdProperty: ${{ steps.extract_notion_id_property.outputs.VALUE }}
+          statusPropertyName: ${{ steps.set_notion_status.outputs.PROPERTY_NAME }}
+          statusPropertyValue: ${{ steps.set_notion_status.outputs.VALUE }}
+          githubPrPropertyName: "GitHub PR(text)"
+        # CLIでやるパターン
+        # run: |
+        #   npm run change-notion-task -- \
+        #     --notionIdProperty "${{ steps.extract_notion_id_property.outputs.VALUE }}" \
+        #     --githubPrTitle "${{ github.event.pull_request.title }}" \
+        #     --githubPrUrl "${{ github.event.pull_request.html_url }}"
+        # 共通設定の環境変数
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          DATABASE_ID: ${{ vars.DATABASE_ID }}
+
+      - name: Comment Connected Tasks
+        if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          file-path: ./connected-tasks.md
+          comment-tag: CONNECTED_NOTION_TASKS
