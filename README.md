@@ -17,6 +17,15 @@ on:
       - review_requested
       - closed
 
+env:
+  NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+  DATABASE_ID: ${{ vars.DATABASE_ID }}
+  NOTION_STATUS_PROPERTY_NAME: "ステータス"
+  NOTION_STATUS_PROPERTY_VALUE_IN_PROGRESS: "進行中"
+  NOTION_STATUS_PROPERTY_VALUE_REVIEW: "レビュー中"
+  NOTION_STATUS_PROPERTY_VALUE_COMPLETED: "完了"
+  NOTION_GITHUB_PR_PROPERTY_NAME: "GitHub PR(text)"
+
 jobs:
   connect-notion-task-with-github-pr:
     runs-on: ubuntu-22.04
@@ -53,21 +62,21 @@ jobs:
         run: |
           case "${{ github.event.action }}" in
             opened|reopened)
-              STATUS="進行中"
+              STATUS="${{ env.NOTION_STATUS_PROPERTY_VALUE_IN_PROGRESS }}"
               ;;
             review_requested)
-              STATUS="レビュー中"
+              STATUS="${{ env.NOTION_STATUS_PROPERTY_VALUE_REVIEW }}"
               ;;
             closed)
               if [[ "${{ github.event.pull_request.merged }}" == 'true' ]]; then
-                STATUS="完了"
+                STATUS="${{ env.NOTION_STATUS_PROPERTY_VALUE_COMPLETED }}"
               fi
               ;;
           esac
           if [[ -n "$STATUS" ]]; then
             echo "更新先のNotionステータス: $STATUS"
             echo "VALUE=$STATUS" >> $GITHUB_OUTPUT
-            echo "PROPERTY_NAME=ステータス" >> $GITHUB_OUTPUT
+            echo "PROPERTY_NAME=${{ env.NOTION_STATUS_PROPERTY_NAME }}" >> $GITHUB_OUTPUT
           else
             echo "ステータス更新はありません"
           fi
@@ -82,10 +91,10 @@ jobs:
           notionIdProperty: ${{ steps.extract_notion_id_property.outputs.VALUE }}
           statusPropertyName: ${{ steps.set_notion_status.outputs.PROPERTY_NAME }}
           statusPropertyValue: ${{ steps.set_notion_status.outputs.VALUE }}
-          githubPrPropertyName: "GitHub PR(text)"
+          githubPrPropertyName: "${{ env.NOTION_GITHUB_PR_PROPERTY_NAME }}"
         env:
-          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          DATABASE_ID: ${{ vars.DATABASE_ID }}
+          NOTION_TOKEN: ${{ env.NOTION_TOKEN }}
+          DATABASE_ID: ${{ env.DATABASE_ID }}
 
       - name: Comment Connected Tasks
         if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
@@ -101,9 +110,9 @@ jobs:
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
 | notionIdProperty       | 変更対象の Notion のユニーク ID プロパティ値。複数指定する場合はカンマ区切りで指定する。<br />例: "TSK-123, TSK-456"                                |        |
 | beforeNotionIdProperty | 以前指定していた Notion のユニーク ID プロパティ値。notionIdProperty との差分を見て、消えたものについては unlink する。<br />例: "TSK-123, TSK-456" |        |
-| statusPropertyName     | 変更するステータスの Notion プロパティ名                                                                                                            |        |
+| statusPropertyName     | 変更するステータスの Notion プロパティ名(ステータスプロパティ)                                                                                      |        |
 | statusPropertyValue    | 変更後のステータスの Notion プロパティ値                                                                                                            |        |
-| githubPrPropertyName   | GitHub PR の Notion プロパティ名                                                                                                                    | ✅     |
+| githubPrPropertyName   | GitHub PR の Notion プロパティ名(テキストプロパティ)                                                                                                | ✅     |
 
 #### 環境変数
 
