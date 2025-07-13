@@ -70,7 +70,7 @@ jobs:
           DATABASE_ID: ${{ vars.DATABASE_ID }}
 
       - name: Comment Connected Tasks
-        if: steps.extract_notion_id_property.outputs.value != ''
+        if: steps.extract_notion_id_property.outputs.value != '' || steps.extract_notion_id_property_before.outputs.value != ''
         uses: thollander/actions-comment-pull-request@v3
         with:
           file-path: ./connected-tasks.md
