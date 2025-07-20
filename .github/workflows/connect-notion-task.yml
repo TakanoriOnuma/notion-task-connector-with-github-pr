@@ -74,23 +74,24 @@ jobs:
           fi
 
       # アクションビルド用のステップ
-      - name: Set up Node.js
-        if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: package.json
-          cache: "npm"
-      - name: Install
-        if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
-        run: npm install
-      - name: Build Action
-        if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
-        run: npm run build
+      # - name: Set up Node.js
+      #   if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version-file: package.json
+      #     cache: "npm"
+      # - name: Install
+      #   if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
+      #   run: npm install
+      # - name: Build Action
+      #   if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
+      #   run: npm run build
 
       - name: Change Notion Task
         if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
         # 自作アクションでやるパターン
-        uses: ./
+        # uses: ./
+        uses: TakanoriOnuma/notion-task-connector-with-github-pr@v0.0.3
         with:
           beforeNotionIdProperty: ${{ steps.extract_notion_id_property_before.outputs.VALUE }}
           notionIdProperty: ${{ steps.extract_notion_id_property.outputs.VALUE }}
