@@ -83,9 +83,9 @@ jobs:
 
       - name: Change Notion Task
         if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
-        uses: TakanoriOnuma/notion-task-connector-with-github-pr@dist
-        # バージョンを固定したい場合は@の後ろをv0.0.0のようにする
-        # uses: TakanoriOnuma/notion-task-connector-with-github-pr@v0.0.0
+        uses: TakanoriOnuma/notion-task-connector-with-github-pr@v0.0.4
+        # 最新のコードを参照し続けたい場合は@distと書く
+        # uses: TakanoriOnuma/notion-task-connector-with-github-pr@dist
         with:
           beforeNotionIdProperty: ${{ steps.extract_notion_id_property_before.outputs.VALUE }}
           notionIdProperty: ${{ steps.extract_notion_id_property.outputs.VALUE }}
