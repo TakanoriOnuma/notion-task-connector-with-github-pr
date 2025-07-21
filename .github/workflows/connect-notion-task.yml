@@ -11,7 +11,7 @@ on:
 
 env:
   NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-  DATABASE_ID: ${{ vars.DATABASE_ID }}
+  DATABASE_ID: "22746b81e7ac80faa865e69dd09f3aa6"
   NOTION_STATUS_PROPERTY_NAME: "ステータス"
   NOTION_STATUS_PROPERTY_VALUE_IN_PROGRESS: "進行中"
   NOTION_STATUS_PROPERTY_VALUE_REVIEW: "レビュー中"
@@ -74,23 +74,23 @@ jobs:
           fi
 
       # アクションビルド用のステップ
-      - name: Set up Node.js
-        if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: package.json
-          cache: "npm"
-      - name: Install
-        if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
-        run: npm install
-      - name: Build Action
-        if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
-        run: npm run build
+      # - name: Set up Node.js
+      #   if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version-file: package.json
+      #     cache: "npm"
+      # - name: Install
+      #   if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
+      #   run: npm install
+      # - name: Build Action
+      #   if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
+      #   run: npm run build
 
       - name: Change Notion Task
         if: steps.extract_notion_id_property.outputs.VALUE != '' || steps.extract_notion_id_property_before.outputs.VALUE != ''
         # 自作アクションでやるパターン
-        uses: ./
+        uses: TakanoriOnuma/notion-task-connector-with-github-pr@dist
         with:
           beforeNotionIdProperty: ${{ steps.extract_notion_id_property_before.outputs.VALUE }}
           notionIdProperty: ${{ steps.extract_notion_id_property.outputs.VALUE }}
