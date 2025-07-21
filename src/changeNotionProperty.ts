@@ -70,7 +70,7 @@ export const changeNotionProperty = async ({
       githubPrManager.removeGitHubPr(githubPrProperty.value);
 
       return await notionManager.updateNotionProperty(targetPage.id, {
-        statusProperty: statusProperty,
+        statusProperty,
         githubPrRichTextProperty: {
           name: githubPrProperty.name,
           value: githubPrManager.createGitHubPrsRichText(),
