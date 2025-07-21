@@ -31424,7 +31424,7 @@ const changeNotionProperty = (_a) => __awaiter(void 0, [_a], void 0, function* (
         // 自分のGitHub PR情報を取り除く
         githubPrManager.removeGitHubPr(githubPrProperty.value);
         return yield notionManager.updateNotionProperty(targetPage.id, {
-            statusProperty: statusProperty,
+            statusProperty,
             githubPrRichTextProperty: {
                 name: githubPrProperty.name,
                 value: githubPrManager.createGitHubPrsRichText(),
